@@ -5,14 +5,20 @@ import com.quiz.repository.QuizRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class QuizServiceImpl implements QuizService {
     private QuizRepository quizRepository;
 
-    public QuizServiceImpl(QuizRepository quizRepository) {
+    public QuizServiceImpl(QuizRepository quizRepository, QuestionClient questionClient) {
         this.quizRepository = quizRepository;
+        this.questionClient = questionClient;
     }
+
+    private QuestionClient questionClient;
+
+
 
     @Override
     public Quiz add(Quiz quiz) {
@@ -21,11 +27,19 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     public List<Quiz> get() {
-        return quizRepository.findAll();
+        List<Quiz> quizzes =quizRepository.findAll();
+        List<Quiz> newQuizList = quizzes.stream().map(quiz -> {
+            quiz.setQuestions(questionClient.getQuestionOfQuiz(quiz.getId()));
+            return quiz;
+        }).collect(Collectors.toList());
+        return newQuizList;
     }
 
     @Override
     public Quiz get(Long id) {
-        return quizRepository.findById(id).orElseThrow(() -> new RuntimeException("Quiz not found"));
+
+        Quiz quiz = quizRepository.findById(id).orElseThrow( () -> new RuntimeException( " quiz with id " + id + " not found!"));
+        quiz.setQuestions(questionClient.getQuestionOfQuiz(quiz.getId()));
+        return quiz;
     }
 }
